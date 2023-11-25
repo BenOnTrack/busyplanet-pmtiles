@@ -10,7 +10,7 @@
 	const pmTiles = new PMTiles(browser ? pmSource : filePath);
 
 	if (browser) {
-		maplibre.addProtocol('custom', (params, callback) => {
+		maplibre.addProtocol('pmtiles', (params, callback) => {
 			const filePath = params.url.split('://')[1];
 			const arg = params.url.match(/\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
 			if (arg?.length != 4) return callback(new Error(`Tile fetch error: bad params`));
@@ -57,7 +57,7 @@
 		// Replace the origin in the template file with the page origin, as it is where the tile endpoint
 		// run.
 		style.sources.openmaptiles.tiles = style.sources.openmaptiles.tiles.map((s: string) => {
-			const customOrigin = `custom://${$page.url.origin.split('://')[1]}`;
+			const customOrigin = `pmtiles://${$page.url.origin.split('://')[1]}`;
 			return s.replace('@origin@', customOrigin);
 		});
 
