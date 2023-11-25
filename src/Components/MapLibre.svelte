@@ -66,7 +66,6 @@
 			style: style,
 			center: [lon, lat],
 			// zoom: zoom,
-			maxZoom: 6,
 			// maxTileCacheSize: 5000,
 			refreshExpiredTiles: false
 		});
