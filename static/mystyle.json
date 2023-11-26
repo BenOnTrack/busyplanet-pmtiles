@@ -3351,6 +3351,11 @@
       "source": "route",
       "source-layer": "route",
       "metadata": {"switch": false},
+      "filter": [
+        "in",
+        ["id"],
+        [ "literal", [0] ]
+      ],
       "paint": {
         "line-color": [
           "match",
@@ -3378,6 +3383,11 @@
       "source": "route",
       "source-layer": "route",
       "metadata": {"switch": false},
+      "filter": [
+        "in",
+        ["id"],
+        [ "literal", [0] ]
+      ],
       "minzoom": 1,
       "layout": {
         "symbol-placement": "line",
