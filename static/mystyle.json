@@ -5,15 +5,15 @@
   "sources": {
       "basemap": {
           "type": "vector",
-          "tiles": ["@pmtilesOrigin@/basemap/{z}/{x}/{y}.pbf"]
+          "url": "pmtiles://http://127.0.0.1:5173/basemap.pmtiles"
       },
       "route": {
         "type": "vector",
-        "tiles": ["@pmtilesOrigin@/route/{z}/{x}/{y}.pbf"]
+        "url": "pmtiles://http://127.0.0.1:5173/route.pmtiles"
     }
   },
-  "glyphs": "@staticOrigin@/glyphs/{fontstack}/{range}.pbf",
-  "sprite": "@staticOrigin@/sprites/busyplanet",
+  "glyphs": "http://127.0.0.1:5173/glyphs/{fontstack}/{range}.pbf",
+  "sprite": "http://127.0.0.1:5173/sprites/busyplanet",
   "layers": [
     {
       "id": "background",
