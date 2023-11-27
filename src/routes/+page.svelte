@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MapLibre from '../Components/MapLibre.svelte';
+	import App from '../Components/App.svelte';
 </script>
 
-<MapLibre />
+<App />

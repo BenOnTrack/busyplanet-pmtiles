@@ -345,6 +345,8 @@
 	}
 
 	export function getMapZoom(map) {
+		console.log(map.getZoom())
 		return map.getZoom();
+		
 	}
 </script>

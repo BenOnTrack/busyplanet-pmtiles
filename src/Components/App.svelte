@@ -1,63 +1,72 @@
-
 <script context="module" lang="ts">
-    import maplibre from 'maplibre-gl';
-    import { page } from '$app/stores';
-    import { PMTiles } from '$lib/pmtiles/pmtiles';
+	import maplibre from 'maplibre-gl';
+	import { page } from '$app/stores';
+	import { PMTiles } from '$lib/pmtiles/pmtiles';
 
 	import LayerColorSwitcher from './LayerColorSwitcher.svelte';
 	import LayerSwitcher from './LayerSwitcher.svelte';
 	import RouteDropdown from './RouteDropdown.svelte';
-	import { Tag } from 'carbon-components-svelte';
+	import { Button, Tag } from 'carbon-components-svelte';
 
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import 'carbon-components-svelte/css/white.css';
 
-	import {getDataSetFeatureFromID,toggleRouteAndSetMapViewFromFilter} from '../utils/MapFunctions.svelte'
+	import {
+		getMapZoom,
+		toggleLayerIDwithFilter,
+		getDataSetFeatureFromID,
+		toggleRouteAndSetMapViewFromFilter
+	} from '../utils/MapFunctions.svelte';
+	import { addId, removeId, getAllIds } from '$lib/bookmarks/bookmarkdb';
 
-    const basemapFilePath = 'basemap.pmtiles';
-    const routeFilePath = 'route.pmtiles';
+	const basemapFilePath = 'nz-base.pmtiles';
+	const routeFilePath = 'route.pmtiles';
 
-    const basemapPMSource = browser ? new DBFetchSource(basemapFilePath) : null;
-    const routePMSource = browser ? new DBFetchSource(routeFilePath) : null;
+	const basemapPMSource = browser ? new DBFetchSource(basemapFilePath) : null;
+	const routePMSource = browser ? new DBFetchSource(routeFilePath) : null;
 
-    const basemapPMTiles = new PMTiles(browser ? basemapPMSource : basemapFilePath);
-    const routePMTiles = new PMTiles(browser ? routePMSource : routeFilePath);
+	const basemapPMTiles = new PMTiles(browser ? basemapPMSource : basemapFilePath);
+	const routePMTiles = new PMTiles(browser ? routePMSource : routeFilePath);
 
-    function handleTileRequest(match, pmTiles: PMTiles): Promise<any> {
-        const z = parseInt(match[1]);
-        const x = parseInt(match[2]);
-        const y = parseInt(match[3]);
+	function handleTileRequest(match, pmTiles: PMTiles): Promise<any> {
+		const z = parseInt(match[1]);
+		const x = parseInt(match[2]);
+		const y = parseInt(match[3]);
 
-        return pmTiles.getZxy(z, x, y);
-    }
+		return pmTiles.getZxy(z, x, y);
+	}
 
-    if (browser) {
-        maplibre.addProtocol('pmtiles', (params, callback) => {
-            const matchBasemap = params.url.match(/\/basemap\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
-            const matchRoute = params.url.match(/\/route\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
+	if (browser) {
+		maplibre.addProtocol('pmtiles', (params, callback) => {
+			const matchBasemap = params.url.match(/\/basemap\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
+			const matchRoute = params.url.match(/\/route\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
+			// console.log("params.url",params.url)
+			// console.log("matchBasemap",matchBasemap)
+			// console.log("matchRoute",matchRoute)
 
-            Promise.all([
-                matchBasemap && handleTileRequest(matchBasemap, basemapPMTiles),
-                matchRoute && handleTileRequest(matchRoute, routePMTiles)
-            ]).then(([tileBasemap, tileRoute]) => {
-                if (tileBasemap) {
-                    callback(null, tileBasemap.data, null, null);
-                } else if (tileRoute) {
-                    callback(null, tileRoute.data, null, null);
-                } else {
-                    console.log('No tiles fetched for either basemap or route');
-                    callback(null, null, null, null);
-                }
-            }).catch(error => {
-                console.error(`Error fetching tiles: ${error.message}`);
-                callback(error, null, null, null);
-            });
+			Promise.all([
+				matchBasemap && handleTileRequest(matchBasemap, basemapPMTiles),
+				matchRoute && handleTileRequest(matchRoute, routePMTiles)
+			])
+				.then(([tileBasemap, tileRoute]) => {
+					if (tileBasemap) {
+						callback(null, tileBasemap.data, null, null);
+					} else if (tileRoute) {
+						callback(null, tileRoute.data, null, null);
+					} else {
+						console.log('No tiles fetched for either basemap or route');
+						callback(null, null, null, null);
+					}
+				})
+				.catch((error) => {
+					console.error(`Error fetching tiles: ${error.message}`);
+					callback(error, null, null, null);
+				});
 
-            return { cancel: () => {} };
-        });
-    }
+			return { cancel: () => {} };
+		});
+	}
 </script>
-
 
 <script lang="ts">
 	import { onMount } from 'svelte';
@@ -101,6 +110,9 @@
 	}
 	// Tags
 	let tagList: string[] = [];
+
+	// Bookamarks
+	let bookmarkIds: number[];
 
 	// RouteSwitcher
 	let routeDataSetFeatures = [];
@@ -165,11 +177,10 @@
 			groupedFilteredRouteDataSetFeatures[feature.subclass].push(feature);
 		});
 
-		// Bookmarks
-		bookmarks = await (await fetch(`${base}/bookmarks.geojson`)).json();
-		console.log('bookmarks:', bookmarks);
 		let bounds = new maplibre.LngLatBounds([174.398279, -37.104532], [175.33349, -36.828027]);
 		targetLayers = ['poi-food_and_drink', 'poi-lodging', 'poi-transportation'];
+
+		// Bookmarks
 
 		// Map
 		map = new Map({
@@ -237,9 +248,51 @@
 					toggleRouteAndSetMapViewFromFilter(map, filterWayMembers, filterRelation, bbox);
 				}
 			});
+
+			// Add zoom event listener to the map
+			map.on('zoom', () => {
+				const currentZoom = map.getZoom();
+				console.log('Current Zoom:', currentZoom);
+			});
+
+			// Bookmark
+			updateBookmark();
 		});
 	});
 
+	async function updateBookmark() {
+		let bookmarkIds = await getAllIds();
+		const bookmarkIdList = bookmarkIds.map((item) => item.id);
+		console.log(bookmarkIdList);
+		const bookmarkIdFilter = ['in', ['id'], ['literal', bookmarkIdList]];
+		toggleLayerIDwithFilter(map, 'bookmarks', bookmarkIdFilter);
+	}
+	async function saveBookmark() {
+		const currentId = clickedSourceFeature.id;
+		if (currentId !== undefined) {
+			console.log('Current ID:', currentId);
+
+			try {
+				const allIds = await getAllIds();
+				// Check if the current ID exists in the database
+				const idExists = allIds.some((item) => item.id === currentId);
+				if (idExists) {
+					// If the ID exists, remove it
+					await removeId(currentId);
+					console.log(`ID ${currentId} removed from the database.`);
+				} else {
+					// If the ID does not exist, add it
+					await addId(currentId);
+					console.log(`ID ${currentId} added to the database.`);
+				}
+			} catch (error) {
+				console.error('Error checking and updating ID in the database: ', error);
+			}
+		} else {
+			console.log('No ID selected.');
+		}
+		updateBookmark();
+	}
 	function updateFeatureInfo() {
 		tagList = [];
 		const propertiesToInclude = ['name:latin', 'class', 'subclass', 'category', 'cuisine'];
@@ -251,20 +304,22 @@
 			}
 		});
 	}
-		
-
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<link
+		rel="stylesheet"
+		href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+	/>
 </svelte:head>
 
 <div>
 	<div id="map" bind:this={mapContainer} />
 	<LayerColorSwitcher {map} {layerColorSwitcherIds} />
 	<LayerSwitcher {map} {layerSwitcherIds} {layerSwitcherSelectedIds} />
+	<Button on:click={saveBookmark}>Save ID</Button>
 	<div id="feature-info">
-		<RouteDropdown {map} {filteredRouteDataSetFeatures} {groupedFilteredRouteDataSetFeatures} />
+		<!-- <RouteDropdown {map} {filteredRouteDataSetFeatures} {groupedFilteredRouteDataSetFeatures} /> -->
 
 		{#if tagList.length > 0}
 			{#each tagList as tag (tag)}
