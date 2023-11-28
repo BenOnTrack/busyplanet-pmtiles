@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-netlify';
 import { vitePreprocess } from '@sveltejs/kit/vite';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -16,7 +16,7 @@ const config = {
 			register: false
 		},
 		paths: {
-			base: process.env.NODE_ENV === 'production' ? '/Planetiler_MapLibre_Sveltekit' : '',
+			base: process.env.NODE_ENV === 'production' ? '' : '',
 		}
 	}
 };
