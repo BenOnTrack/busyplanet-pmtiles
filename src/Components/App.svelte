@@ -140,8 +140,8 @@
 		style.sources.route.tiles = style.sources.route.tiles.map((s: string) => {
 			return s.replace('@pmtilesOrigin@', pmtilesOrigin);
 		});
-		// style.sprite = style.sprite.replace('@staticOrigin@', staticOrigin);
-		// style.glyphs = style.glyphs.replace('@staticOrigin@', staticOrigin);
+		style.sprite = style.sprite.replace('@staticOrigin@', staticOrigin);
+		style.glyphs = style.glyphs.replace('@staticOrigin@', staticOrigin);
 
 		// Style Layers
 		styleLayers = style.layers.map((layer: { id: number }, id: number) => ({
