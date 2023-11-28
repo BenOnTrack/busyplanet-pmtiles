@@ -12,8 +12,8 @@
         "tiles": ["@pmtilesOrigin@/route/{z}/{x}/{y}.pbf"]
     }
   },
-  "glyphs": "@staticOrigin@/glyphs/{fontstack}/{range}.pbf",
-  "sprite": "@staticOrigin@/sprites/busyplanet",
+  "glyphs": "/glyphs/{fontstack}/{range}.pbf",
+  "sprite": "/sprites/busyplanet",
   "layers": [
     {
       "id": "background",
