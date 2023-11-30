@@ -16,7 +16,7 @@ const config = {
 			register: false
 		},
 		paths: {
-			base: process.env.NODE_ENV === 'production' ? '' : '',
+			base: process.env.NODE_ENV === 'production' ? '/busyplanet-pmtiles' : '',
 		}
 	}
 };
