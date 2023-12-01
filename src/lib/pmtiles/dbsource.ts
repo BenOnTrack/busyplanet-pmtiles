@@ -2,7 +2,7 @@ import Dexie from "dexie";
 import { bytesToHeader, defaultDecompress, deserializeIndex, type RangeResponse, type Source } from "./pmtiles";
 import { lru, type LRU } from "tiny-lru";
 
-const db = new Dexie("pmfiles");
+const db = new Dexie("pmtiles");
 
 db.version(1).stores({
     fileChunks: '&[url+offset]',

@@ -2,7 +2,7 @@
 import Dexie from 'dexie';
 
 // Create a Dexie instance and define the database
-const bookmarkdb = new Dexie<IDDBSchema>('bookmarks');
+const bookmarkdb = new Dexie<IDDBSchema>('bookmark');
 
 // Define the database version and stores
 bookmarkdb.version(1).stores({
