@@ -1,8 +1,10 @@
 <script context="module" lang="ts">
 	import maplibre from 'maplibre-gl';
 	import { page } from '$app/stores';
-	import { PMTiles } from '$lib/pmtiles/pmtiles';
+	import { goto } from '$app/navigation';
 
+	import { PMTiles } from '$lib/pmtiles/pmtiles';
+	import { liveQuery } from 'dexie';
 	import LayerColorSwitcher from './LayerColorSwitcher.svelte';
 	import LayerSwitcher from './LayerSwitcher.svelte';
 	import RouteDropdown from './RouteDropdown.svelte';
@@ -17,52 +19,62 @@
 		getDataSetFeatureFromID,
 		toggleRouteAndSetMapViewFromFilter
 	} from '../utils/MapFunctions.svelte';
-	import { addId, removeId, getAllIds } from '$lib/bookmarks/bookmarkdb';
+	import {
+		bookmarkdb,
+		addBookmark,
+		removeBookmark,
+		getAllBookmarks
+	} from '$lib/bookmarks/bookmarkdb';
 
-	const basemapFilePath = 'nz-base.pmtiles';
-	const routeFilePath = 'route.pmtiles';
+	let bookmarks: number[] = [];
+	// bookmarks = liveQuery(() => (browser ? bookmarkdb.ids.toArray() : []));
+	// console.log(bookmarks);
 
-	const basemapPMSource = browser ? new DBFetchSource(basemapFilePath) : null;
-	const routePMSource = browser ? new DBFetchSource(routeFilePath) : null;
-
-	const basemapPMTiles = new PMTiles(browser ? basemapPMSource : basemapFilePath);
-	const routePMTiles = new PMTiles(browser ? routePMSource : routeFilePath);
-
-	function handleTileRequest(match, pmTiles: PMTiles): Promise<any> {
-		const z = parseInt(match[1]);
-		const x = parseInt(match[2]);
-		const y = parseInt(match[3]);
-
-		return pmTiles.getZxy(z, x, y);
-	}
+	const basemapfilepath = 'nz-base.pmtiles';
+	const basemapPMsource = browser ? new DBFetchSource(basemapfilepath) : null;
+	const basemapPMtiles = new PMTiles(browser ? basemapPMsource : basemapfilepath);
 
 	if (browser) {
-		maplibre.addProtocol('pmtiles', (params, callback) => {
-			const matchBasemap = params.url.match(/\/basemap\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
-			const matchRoute = params.url.match(/\/route\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
-			// console.log("params.url",params.url)
-			// console.log("matchBasemap",matchBasemap)
-			// console.log("matchRoute",matchRoute)
+		maplibre.addProtocol('basemap', (params, callback) => {
+			const arg = params.url.match(/\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
+			if (arg?.length != 4) return callback(new Error(`Tile fetch error: bad params`));
+			const z = parseInt(arg[1]);
+			const x = parseInt(arg[2]);
+			const y = parseInt(arg[3]);
 
-			Promise.all([
-				matchBasemap && handleTileRequest(matchBasemap, basemapPMTiles),
-				matchRoute && handleTileRequest(matchRoute, routePMTiles)
-			])
-				.then(([tileBasemap, tileRoute]) => {
-					if (tileBasemap) {
-						callback(null, tileBasemap.data, null, null);
-					} else if (tileRoute) {
-						callback(null, tileRoute.data, null, null);
-					} else {
-						console.log('No tiles fetched for either basemap or route');
-						callback(null, null, null, null);
-					}
-				})
-				.catch((error) => {
-					console.error(`Error fetching tiles: ${error.message}`);
-					callback(error, null, null, null);
-				});
+			basemapPMtiles.getZxy(z, x, y).then((t) => {
+				if (t) {
+					callback(null, t.data, null, null);
+				} else {
+					console.log(`Didn't get basemap ${z}, ${x}, ${y}`);
+					callback(null, null, null, null);
+				}
+			});
 
+			return { cancel: () => {} };
+		});
+	}
+
+	const routefilepath = 'route.pmtiles';
+	const routePMsource = browser ? new DBFetchSource(routefilepath) : null;
+	const routePMtiles = new PMTiles(browser ? routePMsource : routefilepath);
+
+	if (browser) {
+		maplibre.addProtocol('route', (params, callback) => {
+			const arg = params.url.match(/\/([0-9]+)\/([0-9]+)\/([0-9]+)\.pbf/);
+			if (arg?.length != 4) return callback(new Error(`Tile fetch error: bad params`));
+			const z = parseInt(arg[1]);
+			const x = parseInt(arg[2]);
+			const y = parseInt(arg[3]);
+
+			const pmres = routePMtiles.getZxy(z, x, y).then((t) => {
+				if (t) {
+					callback(null, t.data, null, null);
+				} else {
+					console.log(`Didn't get route ${z}, ${x}, ${y}`);
+					callback(null, null, null, null);
+				}
+			});
 			return { cancel: () => {} };
 		});
 	}
@@ -78,7 +90,7 @@
 
 	export let lat = -36.88;
 	export let lon = 174.77;
-	export let zoom = 12;
+	export let zoom = 8;
 	let bounds = new maplibre.LngLatBounds([174.398279, -37.104532], [175.33349, -36.828027]);
 	$: if (map) {
 		map.flyTo({ center: [lon, lat], zoom: zoom, essential: true });
@@ -88,7 +100,8 @@
 	// Map
 	let mapContainer: HTMLDivElement;
 	let map: Map;
-	let pmtilesOrigin: string;
+	let basemapOrigin: string;
+	let routeOrigin: string;
 	let staticOrigin: string;
 	let targetLayers: string[];
 	let clickedSourceFeature: maplibregl.GeoJSONFeature;
@@ -128,17 +141,18 @@
 	onMount(async () => {
 		console.log('Page Url Origin:', $page.url.origin);
 		console.log('Base path:', base);
-		pmtilesOrigin = `pmtiles://${$page.url.origin.split('://')[1]}`;
+		basemapOrigin = `basemap://${$page.url.origin.split('://')[1]}`;
+		routeOrigin = `route://${$page.url.origin.split('://')[1]}`;
+
 		staticOrigin = `${$page.url.origin}${base}`;
-		await basemapPMSource?.fileInfoPromise;
-		await routePMSource?.fileInfoPromise;
+		await basemapPMsource?.fileInfoPromise;
 
 		const style = await (await fetch(`${base}/mystyle.json`)).json();
 		style.sources.basemap.tiles = style.sources.basemap.tiles.map((s: string) => {
-			return s.replace('@pmtilesOrigin@', pmtilesOrigin);
+			return s.replace('@basemapOrigin@', basemapOrigin);
 		});
 		style.sources.route.tiles = style.sources.route.tiles.map((s: string) => {
-			return s.replace('@pmtilesOrigin@', pmtilesOrigin);
+			return s.replace('@routeOrigin@', routeOrigin);
 		});
 		style.sprite = style.sprite.replace('@staticOrigin@', staticOrigin);
 		style.glyphs = style.glyphs.replace('@staticOrigin@', staticOrigin);
@@ -178,7 +192,7 @@
 		});
 
 		let bounds = new maplibre.LngLatBounds([174.398279, -37.104532], [175.33349, -36.828027]);
-		targetLayers = ['poi-food_and_drink', 'poi-lodging', 'poi-transportation'];
+		targetLayers = ['poi-food_and_drink', 'poi-lodging', 'poi-transportation', 'bookmarks-symbol'];
 
 		// Bookmarks
 
@@ -187,8 +201,7 @@
 			container: mapContainer,
 			style: style,
 			center: [lon, lat],
-			// zoom: zoom,
-			// maxTileCacheSize: 5000,
+			maxTileCacheSize: 5000,
 			refreshExpiredTiles: false,
 			maxBounds: bounds
 		});
@@ -214,11 +227,11 @@
 				else {
 					console.log(features[0]);
 					clickedSourceFeature = features[0];
+					updateFeatureInfo();
 					map.flyTo({
 						center: clickedSourceFeature.geometry.coordinates,
-						zoom: 20
+						zoom: 13
 					});
-					updateFeatureInfo();
 				}
 			});
 
@@ -261,28 +274,40 @@
 	});
 
 	async function updateBookmark() {
-		let bookmarkIds = await getAllIds();
+		let bookmarkIds = await getAllBookmarks();
 		const bookmarkIdList = bookmarkIds.map((item) => item.id);
 		console.log(bookmarkIdList);
 		const bookmarkIdFilter = ['in', ['id'], ['literal', bookmarkIdList]];
-		toggleLayerIDwithFilter(map, 'bookmarks', bookmarkIdFilter);
+		toggleLayerIDwithFilter(map, 'bookmarks-symbol', bookmarkIdFilter);
+		toggleLayerIDwithFilter(map, 'bookmarks-circle', bookmarkIdFilter);
 	}
 	async function saveBookmark() {
-		const currentId = clickedSourceFeature.id;
-		if (currentId !== undefined) {
+		const currentId: number = clickedSourceFeature.id;
+		const currentName: string = clickedSourceFeature.properties['name:latin'];
+		const currentClass: string = clickedSourceFeature.properties['class'];
+		const currentSubclass: string = clickedSourceFeature.properties['subclass'];
+		const currentCategory: string = clickedSourceFeature.properties['category'];
+		if (currentId !== null) {
 			console.log('Current ID:', currentId);
 
 			try {
-				const allIds = await getAllIds();
+				const allIds = await getAllBookmarks();
 				// Check if the current ID exists in the database
 				const idExists = allIds.some((item) => item.id === currentId);
 				if (idExists) {
 					// If the ID exists, remove it
-					await removeId(currentId);
+					await removeBookmark(currentId);
 					console.log(`ID ${currentId} removed from the database.`);
 				} else {
 					// If the ID does not exist, add it
-					await addId(currentId);
+					await addBookmark(
+						currentId,
+						currentName,
+						currentClass,
+						currentSubclass,
+						currentCategory,
+						''
+					);
 					console.log(`ID ${currentId} added to the database.`);
 				}
 			} catch (error) {
@@ -304,6 +329,29 @@
 			}
 		});
 	}
+
+	async function navigateToEdit() {
+  const currentId: number = clickedSourceFeature.id;
+
+  try {
+    const bookmark = await bookmarkdb.ids
+      .where({ id: currentId })
+      .first();
+
+    if (bookmark) {
+      // Bookmark with the specified ID exists, navigate to edit page
+      goto(`/${currentId}`);
+    } else {
+      // Bookmark with the specified ID doesn't exist
+      console.error(`Bookmark with ID ${currentId} not found.`);
+      // You may choose to show a user-friendly message or handle this case as appropriate
+    }
+  } catch (error) {
+    console.error('Error fetching bookmark:', error);
+    // Handle other errors as needed
+  }
+}
+
 </script>
 
 <svelte:head>
@@ -317,7 +365,8 @@
 	<div id="map" bind:this={mapContainer} />
 	<LayerColorSwitcher {map} {layerColorSwitcherIds} />
 	<LayerSwitcher {map} {layerSwitcherIds} {layerSwitcherSelectedIds} />
-	<Button on:click={saveBookmark}>Save ID</Button>
+	<Button on:click={saveBookmark}>Save Bookmark</Button>
+	<Button on:click={navigateToEdit}>Edit Bookmark</Button>
 	<div id="feature-info">
 		<!-- <RouteDropdown {map} {filteredRouteDataSetFeatures} {groupedFilteredRouteDataSetFeatures} /> -->
 
@@ -329,7 +378,7 @@
 	</div>
 </div>
 
-{#await basemapPMSource?.fileInfoPromise}
+{#await basemapPMsource?.fileInfoPromise}
 	<div class="waiting">
 		<h1>Please Wait</h1>
 	</div>

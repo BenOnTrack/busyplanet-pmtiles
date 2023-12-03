@@ -44,6 +44,7 @@
 		"jszip": "^3.10.1",
 		"maplibre-gl": "^3.3.1",
 		"pako": "^2.0.4",
+		"svelte-routing": "^2.9.0",
 		"svelte-tags-input": "^5.0.0",
 		"tiny-lru": "^11.2.5"
 	}

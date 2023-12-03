@@ -2,37 +2,50 @@
 import Dexie from 'dexie';
 
 // Create a Dexie instance and define the database
-const bookmarkdb = new Dexie<IDDBSchema>('bookmarks');
+export const bookmarkdb = new Dexie<IDDBSchema>('bookmarks');
 
 // Define the database version and stores
 bookmarkdb.version(1).stores({
-  ids: '&id',
+  ids: '&id, name, class, subclass, category,description'
 });
 
 interface IDDBSchema {
-  ids: { id: number };
+  ids: { id: number, name: string, class: string, subclass: string, category: string, description:string}; // Include the 'name' property
 }
 
-// Export the Dexie instance for external use
-export default bookmarkdb;
+bookmarkdb.open();
 
 // Export additional types/interfaces as needed
 export interface IDData {
   id: number;
+  name: string;
+  class: string; 
+  subclass: string; 
+  category: string;
+  description:string;
 }
 
-// Function to add an ID to the database
-export const addId = async (id: number): Promise<void> => {
+// Function to add a bookmark to the database
+// Assuming you want to use the `async function` declaration
+export async function addBookmark(
+  id: number,
+  name: string,
+  classValue: string,
+  subclass: string,
+  category: string,
+  description:string
+): Promise<void> {
   try {
-    await bookmarkdb.ids.put({ id });
+    await bookmarkdb.ids.put({ id, name, class: classValue, subclass, category,description });
     console.log(`ID ${id} added to the database.`);
   } catch (error) {
     console.error('Error adding ID to the database: ', error);
   }
-};
+}
+
 
 // Function to retrieve all IDs from the database
-export const getAllIds = async (): Promise<IDData[]> => {
+export async function getAllBookmarks(): Promise<IDData[]>{
   try {
     const allIDs = await bookmarkdb.ids.toArray();
     return allIDs;
@@ -43,7 +56,7 @@ export const getAllIds = async (): Promise<IDData[]> => {
 };
 
 // Function to remove an ID from the database
-export const removeId = async (id: number): Promise<void> => {
+export async function removeBookmark(id: number): Promise<void> {
   try {
     await bookmarkdb.ids.delete(id);
     console.log(`ID ${id} removed from the database.`);
@@ -51,3 +64,4 @@ export const removeId = async (id: number): Promise<void> => {
     console.error('Error removing ID from the database: ', error);
   }
 };
+
