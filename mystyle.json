@@ -3,14 +3,15 @@
   "version": 8,
   "name": "Basic",
   "sources": {
-      "basemap": {
-          "type": "vector",
-          "tiles": ["@pmtilesOrigin@/basemap/{z}/{x}/{y}.pbf"]
-      },
+    "basemap": {
+      "type": "vector",
+      "tiles": ["@basemapOrigin@/basemap/{z}/{x}/{y}.pbf"]
+  },
       "route": {
         "type": "vector",
-        "tiles": ["@pmtilesOrigin@/route/{z}/{x}/{y}.pbf"]
+        "tiles": ["@routeOrigin@/route/{z}/{x}/{y}.pbf"]
     }
+    
   },
   "glyphs": "@staticOrigin@/glyphs/{fontstack}/{range}.pbf",
   "sprite": "@staticOrigin@/sprites/busyplanet",
@@ -3341,7 +3342,7 @@
       "type": "symbol",
       "source": "route",
       "source-layer": "route_midpoint",
-      "metadata": {"switch": false},
+      "metadata": {"switch": true},
       "minzoom": 1,
       "layout": {"icon-image": "globe", "visibility": "visible"}
     },
@@ -3403,7 +3404,39 @@
       }
     },
     {
-      "id": "bookmarks",
+      "id": "bookmarks-symbol",
+      "type": "symbol",
+      "source": "basemap",
+      "source-layer": "poi",
+      "metadata": {"switch": false},
+      "filter": [
+        "in",
+        ["id"],
+        [ "literal", [0] ]
+      ],
+      "minzoom": 1,
+      "layout": {
+        "icon-image": "{icon}",
+        "icon-allow-overlap":true,
+        "icon-overlap":"always",
+        "text-anchor": "top",
+        "text-field": "{name:latin}\n{name:nonlatin}",
+        "text-font": ["Noto Sans Regular"],
+        "text-max-width": 9,
+        "text-offset": [0, 1.5],
+        "text-padding": 2,
+        "text-size": 12,
+        "visibility": "visible"
+      },
+      "paint": {
+        "text-color": "#666",
+        "text-halo-blur": 0.5,
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 1
+      }
+    },
+    {
+      "id": "bookmarks-circle",
       "type": "circle",
       "source": "basemap",
       "source-layer": "poi",
@@ -3416,7 +3449,9 @@
       "minzoom": 1,
       "paint": {
         "circle-radius":10,
-        "circle-color":"red"
+        "circle-opacity": 0, 
+        "circle-stroke-color": "red",
+        "circle-stroke-width": 2
       }
     }
   ]
