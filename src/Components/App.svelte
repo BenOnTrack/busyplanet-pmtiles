@@ -30,7 +30,7 @@
 	// bookmarks = liveQuery(() => (browser ? bookmarkdb.ids.toArray() : []));
 	// console.log(bookmarks);
 
-	const basemapfilepath = 'nz-base.pmtiles';
+	const basemapfilepath = `${base}/nz-base.pmtiles`;
 	const basemapPMsource = browser ? new DBFetchSource(basemapfilepath) : null;
 	const basemapPMtiles = new PMTiles(browser ? basemapPMsource : basemapfilepath);
 
@@ -55,7 +55,7 @@
 		});
 	}
 
-	const routefilepath = 'route.pmtiles';
+	const routefilepath = `${base}/route.pmtiles`;
 	const routePMsource = browser ? new DBFetchSource(routefilepath) : null;
 	const routePMtiles = new PMTiles(browser ? routePMsource : routefilepath);
 
@@ -340,7 +340,7 @@
 
     if (bookmark) {
       // Bookmark with the specified ID exists, navigate to edit page
-      goto(`/${currentId}`);
+      goto(`${base}/${currentId}`);
     } else {
       // Bookmark with the specified ID doesn't exist
       console.error(`Bookmark with ID ${currentId} not found.`);

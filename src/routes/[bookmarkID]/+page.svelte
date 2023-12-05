@@ -1,15 +1,14 @@
 <script>
 	import { bookmarkdb } from  '$lib/bookmarks/bookmarkdb';
 	import { goto } from '$app/navigation';
-
+	import { base } from '$app/paths';
 	export let data;
 	$: ({ bookmark } = data);
 
 	$: handleSubmit = () => {
 		try {
 			bookmarkdb.ids.update(bookmark.id, { ...bookmark });
-
-			goto('/');
+			goto(`${base}/`);
 		} catch (err) {
 			console.log(err);
 		}
