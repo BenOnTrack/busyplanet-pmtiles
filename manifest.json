@@ -2,7 +2,7 @@
     "name": "BusyPlanet",
     "short_name": "BP",
     "description": "App to share tips on poi",
-    "start_url": "/",
+    "start_url": "/busyplanet",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
