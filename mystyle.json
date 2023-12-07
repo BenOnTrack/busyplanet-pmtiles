@@ -2162,7 +2162,7 @@
       "type": "fill",
       "source": "basemap",
       "source-layer": "park",
-      "metadata": {"switch": false},
+      "metadata": {"switch": true},
       "minzoom": 6,
       "layout": {"visibility": "none"},
       "paint": {"fill-color": "rgba(167, 203, 131, 1)", "fill-opacity": 0.85},
@@ -2176,7 +2176,7 @@
       "type": "line",
       "source": "basemap",
       "source-layer": "park",
-      "metadata": {"switch": false},
+      "metadata": {"switch": true},
       "filter": [
         "all",
         ["in", "category", "protected_area", "national_park", "nature_reserve"]
@@ -2197,7 +2197,7 @@
       "type": "symbol",
       "source": "basemap",
       "source-layer": "park",
-      "metadata": {"switch": false},
+      "metadata": {"switch": true},
       "filter": [
         "all",
         ["in", "category", "protected_area", "national_park", "nature_reserve"]
