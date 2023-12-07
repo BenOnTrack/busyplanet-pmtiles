@@ -41,7 +41,7 @@
 			const z = parseInt(arg[1]);
 			const x = parseInt(arg[2]);
 			const y = parseInt(arg[3]);
-
+			
 			basemapPMtiles.getZxy(z, x, y).then((t) => {
 				if (t) {
 					callback(null, t.data, null, null);

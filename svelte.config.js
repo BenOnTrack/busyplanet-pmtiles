@@ -22,7 +22,6 @@ const config = {
 			register: false
 		},
 		paths: {
-			assets: 'https://benontrack.github.io/busyplanet',
 			base: process.env.NODE_ENV === 'production' ? '/busyplanet' : '',
 		}
 	}
