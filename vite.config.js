@@ -22,7 +22,7 @@ const config = {
 				suppressWarnings: true,
 			},
 			manifest: {
-				start_url: '/busyplanet/',
+				start_url: '/busyplanet',
 				theme_color: 'green',
 				icons: [
 					{
